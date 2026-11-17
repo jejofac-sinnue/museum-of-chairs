@@ -1,0 +1,1069 @@
+<!-- 도구: ChatGPT / 출처: 교재 Modularity, Pattern 장 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>의자 박물관 · Museum of Chairs</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;600&family=Cormorant+Garamond:ital,wght@0,500;1,400&display=swap" rel="stylesheet">
+<style>
+/* --------------------------------------------------
+   1. Design Tokens (:root에 색, 글자 크기, 간격, 모서리 값 정의)
+-------------------------------------------------- */
+:root {
+  /* Dynamic Responsive Grid System */
+  --cols: 12;
+  --gutter: 24px;
+  --margin: 16px;
+  --max-width: 1200px;
+  
+  /* Color Tokens */
+  --color-bg: #ece6d8;
+  --color-ink: #1d1a16;
+  --color-mut: rgba(29, 26, 22, 0.6);
+  --color-surface-bg: rgba(255, 255, 255, 0.08);
+  --color-border: rgba(29, 26, 22, 0.2);
+  --color-accent: rgba(255, 0, 128, 0.12);
+
+  /* Typography Tokens */
+  --font-serif: 'Noto Serif KR', serif;
+  --font-sans: 'Noto Sans KR', system-ui, sans-serif;
+  --font-display: 'Cormorant Garamond', serif;
+
+  --text-xs: 11px;
+  --text-sm: 12.5px;
+  --text-base: 14.5px;
+  --text-lg: 18px;
+  --text-xl: 36px;
+
+  /* Spacing Tokens */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+
+  /* Border Radius Tokens */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 20px;
+  --radius-full: 50%;
+
+  /* Dynamic Stage Sizing */
+  --S: min(36vh, 28vw, 320px);
+  --cy: 34%;
+
+  /* Time-of-day Shadow Tokens
+     기본값은 원래 그림자와 같고, 스크립트가 시각에 따라 덮어씀 */
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --shadow-card-featured: 0 8px 30px rgba(0, 0, 0, 0.1);
+  --sh-tx: 0px;
+  --sh-sx: 1;
+  --sh-op: 0.13;
+
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #16130f;
+    --color-ink: #e9e1cf;
+    --color-mut: rgba(233, 225, 207, 0.6);
+    --color-surface-bg: rgba(0, 0, 0, 0.25);
+    --color-border: rgba(233, 225, 207, 0.2);
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #16130f;
+  --color-ink: #e9e1cf;
+  --color-mut: rgba(233, 225, 207, 0.6);
+  --color-surface-bg: rgba(0, 0, 0, 0.25);
+  --color-border: rgba(233, 225, 207, 0.2);
+}
+
+/* --------------------------------------------------
+   Breakpoints (1440px / 820px / 390px 대응)
+-------------------------------------------------- */
+@media (max-width: 1023px) { /* Tablet / ~820px */
+  :root {
+    --cols: 8;
+    --gutter: 24px;
+    --S: min(34vh, 38vw, 280px);
+    --cy: 30%;
+    --text-xl: 32px;
+  }
+}
+@media (max-width: 639px) { /* Mobile / ~390px */
+  :root {
+    --cols: 4;
+    --gutter: 16px;
+    --S: min(26vh, 46vw, 200px);
+    --cy: 22%;
+    --text-xl: 28px;
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+html, body {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+body {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: var(--gutter);
+  padding: 0 var(--margin);
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+#st {
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  cursor: grab;
+}
+#st:active {
+  cursor: grabbing;
+}
+
+.layer {
+  position: absolute;
+  left: 50%;
+  top: var(--cy);
+  width: var(--S);
+  height: var(--S);
+  margin: calc(var(--S) * -.725) 0 0 calc(var(--S) * -.5);
+  transform-origin: 50% 72.5%;
+  will-change: transform, opacity;
+  color: var(--color-ink);
+  pointer-events: none;
+}
+.layer svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  overflow: visible;
+}
+
+header {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  left: 0; right: 0;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 22px var(--margin);
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: var(--gutter);
+  pointer-events: none;
+  z-index: 10;
+}
+header .title-wrap { grid-column: span 8; }
+header b { display: block; font: 700 20px var(--font-serif); }
+header i { font: italic 400 14px var(--font-display); color: var(--color-mut); }
+header #snd { grid-column: span 3; justify-self: end; }
+
+button {
+  font: 600 var(--text-xs) var(--font-sans);
+  color: var(--color-ink);
+  background: none;
+  border: 1px solid var(--color-mut);
+  border-radius: var(--radius-lg);
+  padding: 6px 14px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.2s, color 0.2s;
+}
+button:hover {
+  background: var(--color-ink);
+  color: var(--color-bg);
+}
+
+#rail {
+  position: fixed;
+  right: var(--margin);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  z-index: 10;
+}
+#rail button {
+  border: 0;
+  padding: 2px 4px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font: 500 13px var(--font-display);
+  color: var(--color-mut);
+}
+#rail button:hover {
+  background: transparent;
+  color: var(--color-ink);
+}
+#rail button:after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-ink);
+}
+#rail button.on { color: var(--color-ink); font-weight: 700; }
+#rail button.on:after { background: var(--color-ink); }
+
+#pn-container {
+  position: fixed;
+  left: 0; right: 0;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--margin);
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: var(--gutter);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* --------------------------------------------------
+   2. Modules & Components & Pattern 적용 (P1 + P3 + 카드 변형)
+-------------------------------------------------- */
+/* 기본 모듈: 카드 컴포넌트 */
+.card-module {
+  grid-column: span 8;
+  width: 100%;
+  min-width: 0;
+  max-height: min(42vh, 360px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  transition: opacity 0.35s, transform 0.35s;
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: var(--gutter);
+  background: var(--color-surface-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+.card-module.o { opacity: 0; transform: translateY(10px); }
+
+/* 큰 카드 변형 모듈 (Modifier: --featured) */
+.card-module--featured {
+  background: var(--color-surface-bg);
+  border-left: 4px solid var(--color-ink);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-card-featured);
+}
+
+.card-module > * { min-width: 0; overflow-wrap: anywhere; }
+.card-module .k { grid-column: span 6; font: 600 var(--text-xs) var(--font-sans); letter-spacing: 0.2em; color: var(--color-mut); text-transform: uppercase; }
+.card-module .y { grid-column: span 3; font: 500 clamp(36px, 5vw, 68px)/1 var(--font-display); margin: 4px 0 8px; letter-spacing: -0.02em; }
+.card-module h2 { grid-column: span 8; font: 700 clamp(18px, 2vw, 24px)/1.25 var(--font-serif); margin: 0; }
+.card-module .en { grid-column: span 6; font: italic 400 15px var(--font-display); color: var(--color-mut); margin: 2px 0 10px; }
+.card-module .l { grid-column: span 6; font: 500 var(--text-base)/1.5 var(--font-serif); margin: 0 0 6px; }
+.card-module .b { grid-column: span 6; font: 400 var(--text-sm)/1.7 var(--font-sans); color: var(--color-mut); margin: 0 0 10px; }
+.card-module .m { grid-column: span 6; display: flex; flex-wrap: wrap; gap: 4px 14px; border-top: 1px solid var(--color-border); padding-top: var(--space-xs); font: 600 var(--text-xs) var(--font-sans); letter-spacing: 0.04em; }
+
+/* --------------------------------------------------
+   3. Pattern P1 / P3 (SVG 배지 패턴 & 서식 강조 패턴)
+-------------------------------------------------- */
+.pattern-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--color-ink);
+  color: var(--color-bg);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+#hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  font: 400 var(--text-xs) var(--font-sans);
+  color: var(--color-mut);
+  white-space: nowrap;
+  transition: opacity 0.6s;
+  pointer-events: none;
+  z-index: 10;
+}
+
+
+/* --------------------------------------------------
+   Backlight (역광): 림 라이트 / 글자 후광 / 빛 번짐 / 실루엣 / 빛줄기
+   값은 스크립트가 시각에 따라 덮어씀
+-------------------------------------------------- */
+:root {
+  --sil: 0;
+  --rim-solid: 255, 255, 255;
+  --halo: none;
+  --rim-x: 0px; --rim-y: -0.5px; --rim-c: rgba(255,255,255,.1);
+  --rim-glow: 4px; --rim-glow-c: rgba(255,255,255,.15);
+  --melt: 0px;
+}
+/* 림 라이트 + 윤곽 번짐: 의자 실루엣 가장자리에 빛 */
+.layer > svg:not(.cast) {
+  filter: drop-shadow(var(--rim-x) var(--rim-y) 0 var(--rim-c))
+          drop-shadow(0 0 var(--rim-glow) var(--rim-glow-c))
+          blur(var(--melt));
+}
+/* 글자 후광 */
+header b, header i, .card-module .y, .card-module h2 { text-shadow: var(--halo); }
+/* 실루엣 모드: 극단적 역광에서 카드는 어두운 면, 가장자리만 빛남 */
+.card-module {
+  background: color-mix(in srgb, rgba(10, 8, 16, .88) calc(var(--sil) * 100%), var(--color-surface-bg));
+  color: color-mix(in srgb, rgb(var(--rim-solid)) calc(var(--sil) * 100%), var(--color-ink));
+}
+.card-module .k, .card-module .en, .card-module .b {
+  color: color-mix(in srgb, rgb(var(--rim-solid)) calc(var(--sil) * 75%), var(--color-mut));
+}
+/* 빛 번짐(블룸) · 빛줄기 오버레이 */
+#bloom, #shaft { position: fixed; inset: 0; pointer-events: none; }
+#bloom { z-index: 0; }
+#shaft { z-index: 5; }
+
+svg .f { fill: currentColor; fill-rule: evenodd; }
+svg .g { fill: currentColor; opacity: .4; }
+/* 의자 실루엣 투영 그림자 (역광: 바닥에 길게 눕는 그림자) */
+.layer svg.cast {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  opacity: 0;
+  transform-origin: 50% 94%;
+  transform: skewX(var(--cast-skew, 0deg)) scaleY(var(--cast-sy, -0.3));
+  filter: brightness(0) blur(var(--cast-blur, 2px));
+  -webkit-mask-image: linear-gradient(to top, #000 6%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 6%, transparent 100%);
+}
+svg .gl { fill: currentColor; opacity: .12; }
+svg .sh { display: none; } /* 기존 바닥 그림자 제거 */
+svg .b { fill: none; stroke: var(--color-bg); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+svg .s { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+
+#grid-overlay {
+  position: fixed;
+  inset: 0;
+  margin: 0 auto;
+  max-width: var(--max-width);
+  padding: 0 var(--margin);
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: var(--gutter);
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+#grid-overlay.active { opacity: 1; }
+#grid-overlay div {
+  background: var(--color-accent);
+  border-left: 1px solid rgba(255, 0, 128, 0.2);
+  border-right: 1px solid rgba(255, 0, 128, 0.2);
+  height: 100%;
+}
+#grid-btn {
+  position: fixed;
+  right: var(--margin);
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 1000;
+  background: var(--color-bg);
+}
+
+/* --------------------------------------------------
+   Responsive layout: 1440 / 820 / 390
+   좁은 화면에서는 무대와 정보 카드를 세로로 분리해 겹침 방지
+-------------------------------------------------- */
+@media (max-width: 1023px) {
+  :root {
+    --S: min(32vh, 34vw, 270px);
+    --cy: 34%;
+    --text-xl: 32px;
+  }
+
+  header .title-wrap { grid-column: span 8; }
+  header #snd { grid-column: span 4; justify-self: end; }
+  .card-module {
+    grid-column: span 8;
+    max-height: min(43vh, 340px);
+  }
+  .card-module .k { grid-column: span 6; }
+  .card-module .y { grid-column: span 4; }
+  .card-module h2 { grid-column: span 8; }
+  .card-module .en,
+  .card-module .l,
+  .card-module .b,
+  .card-module .m { grid-column: span 6; }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --cols: 4;
+    --gutter: 14px;
+    --margin: 16px;
+    --S: min(28svh, 62vw, 230px);
+    --cy: 50%;
+    --text-xl: clamp(25px, 7vw, 30px);
+  }
+
+  html, body {
+    height: auto;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-height: 100svh;
+    padding: 0 var(--margin);
+  }
+
+  header {
+    position: relative;
+    inset: auto;
+    order: 1;
+    width: 100%;
+    padding: 14px 0 4px;
+    display: block;
+    flex: 0 0 auto;
+  }
+  header .title-wrap { width: 100%; }
+  header b { font-size: 19px; }
+  header i { font-size: 13px; }
+  header #snd { display: none; }
+
+  #st {
+    position: relative;
+    inset: auto;
+    order: 2;
+    width: 100%;
+    height: clamp(230px, 34svh, 330px);
+    min-height: 230px;
+    flex: 0 0 auto;
+    overflow: visible;
+    touch-action: none;
+  }
+
+  .layer {
+    top: 50%;
+    margin: calc(var(--S) * -.5) 0 0 calc(var(--S) * -.5);
+    transform-origin: 50% 50%;
+  }
+
+  #pn-container {
+    position: relative;
+    inset: auto;
+    order: 3;
+    display: block;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0 0 12px;
+    flex: 0 0 auto;
+  }
+
+  .card-module,
+  .card-module--featured {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    padding: 16px;
+    border-radius: var(--radius-md);
+  }
+
+  .card-module--featured {
+    padding: 18px 16px;
+  }
+
+  .card-module .y {
+    order: 1;
+    font-size: clamp(32px, 9vw, 40px);
+    line-height: 1;
+    margin: 0 0 2px;
+  }
+  .card-module .k {
+    order: 2;
+    font-size: var(--text-xs);
+    letter-spacing: .12em;
+    line-height: 1.6;
+  }
+  .card-module h2 {
+    order: 3;
+    font-size: clamp(18px, 5vw, 22px);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+  .card-module .en {
+    order: 4;
+    font-size: 14px;
+    margin: 0 0 2px;
+    overflow-wrap: anywhere;
+  }
+  .card-module .l {
+    order: 5;
+    font-size: var(--text-base);
+    line-height: 1.55;
+    margin: 0;
+  }
+  .card-module .b {
+    order: 6;
+    font-size: 12px;
+    line-height: 1.7;
+    margin: 0;
+  }
+  .card-module .m {
+    order: 7;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    width: 100%;
+    padding-top: 10px;
+    margin-top: 2px;
+    font-size: var(--text-xs);
+  }
+  .pattern-badge {
+    margin: 3px 0 0 4px;
+    white-space: nowrap;
+  }
+
+  #rail {
+    position: relative;
+    inset: auto;
+    order: 4;
+    transform: none;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+    margin: 8px 0 18px;
+    padding: 0;
+  }
+  #rail button {
+    padding: 5px;
+    min-width: 18px;
+    justify-content: center;
+  }
+  #rail button span { display: none; }
+
+  #hint {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    order: 5;
+    transform: none;
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto 72px;
+    padding: 0 8px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  #grid-overlay {
+    padding: 0 var(--margin);
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  }
+  #grid-btn {
+    right: var(--margin);
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* 아주 좁은 화면에서도 카드와 제목이 잘리지 않도록 보정 */
+@media (max-width: 360px) {
+  :root {
+    --margin: 12px;
+    --gutter: 10px;
+    --S: min(27svh, 66vw, 210px);
+  }
+  .card-module,
+  .card-module--featured { padding: 14px 12px; }
+  .card-module .k { letter-spacing: .08em; }
+  #rail { gap: 5px; }
+}
+
+</style>
+</head>
+<body>
+
+<div id="grid-overlay">
+  <div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div>
+  <div></div><div></div><div></div><div></div>
+</div>
+<button id="grid-btn">가이드</button>
+
+<div id="st"></div>
+
+<header>
+  <div class="title-wrap">
+    <b>의자 박물관</b>
+    <i>Museum of Chairs</i>
+  </div>
+  <button id="snd">소리 켜짐</button>
+</header>
+
+<nav id="rail"></nav>
+
+<div id="pn-container">
+  <section id="pn" class="card-module"></section>
+</div>
+
+<div id="hint">스크롤·위아래 드래그: 의자 다리 사이로 들어가기 &nbsp;/&nbsp; 좌우로 밀기: 의자 끌기</div>
+
+<script>
+const M=p=>`<path d="${p}"/><path d="${p}" transform="translate(400 0) scale(-1 1)"/>`;
+const G=(w,s)=>`<g fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${s}</g>`;
+document.body.insertAdjacentHTML('afterbegin','<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><pattern id="hv" width="4" height="4" patternUnits="userSpaceOnUse"><path class="s" stroke-width="1.2" d="M0 4L4 0"/></pattern><pattern id="hc" width="7" height="7" patternUnits="userSpaceOnUse"><path class="s" stroke-width="1" d="M0 0l7 7M7 0L0 7"/></pattern><pattern id="hd" width="8" height="8" patternUnits="userSpaceOnUse"><circle class="f" cx="4" cy="4" r="1.3"/></pattern></defs></svg>');
+const SH='<ellipse class="sh" cx="200" cy="376" rx="150" ry="8"/>';
+const Fd=d=>`<path class="f" d="${d}"/>`,Gd=d=>`<path class="g" d="${d}"/>`,Bd=d=>`<path class="b" d="${d}"/>`,Sd=(w,d)=>`<path class="s" stroke-width="${w}" d="${d}"/>`;
+const F=p=>`<g class="f">${M(p)}</g>`,B=p=>`<g class="b">${M(p)}</g>`,S=(w,p)=>`<g class="s" stroke-width="${w}">${M(p)}</g>`;
+
+const C=[
+SH+Fd('M110 36h180v150H110zM124 50v122h152V50z')+'<rect x="124" y="50" width="152" height="122" fill="url(#hv)"/>'+Fd('M174 112q-24-22-52-8q26 2 52 16zM226 112q24-22 52-8q-26 2-52 16z')+'<circle class="f" cx="200" cy="110" r="22"/>'+Bd('M200 92v36M182 110h36')+Fd('M98 196h204v40H98z')+Bd('M104 204h192M104 228h192')+F('M106 236h28v96q16 6 16 40h-60q0-34 16-40z')+B('M112 250q8 6 16 0M112 266q8 6 16 0M112 282q8 6 16 0M104 372v-10M116 372v-12M128 372v-10M140 372v-10M120 300v30'),
+SH+Fd('M110 50Q200 26 290 50v32Q200 58 110 82z')+Bd('M116 60Q200 38 284 60')+Fd('M200 58q-9 9 0 20q9-11 0-20')+F('M116 82h18v132h-18z')+B('M125 92v116')+Fd('M104 212h192v24H104z')+Bd('M110 219h180M110 229h180')+F('M112 236h20q-6 70-40 136H76q28-66 36-136z')+B('M112 244q-6 60-30 124'),
+SH+Fd('M90 206q110-20 220 0v30H90z')+'<path d="M96 210q104-16 208 0v20H96z" fill="url(#hd)"/>'+Bd('M98 224q102-14 204 0')+S(13,'M102 242l38 126M140 242l-38 126')+B('M106 252l28 100')+F('M90 240a11 11 0 1 0 22 0a11 11 0 1 0 -22 0M130 366a11 11 0 1 0 22 0a11 11 0 1 0 -22 0'),
+SH+Sd(12,'M98 202V150Q98 40 200 40T302 150V202')+Bd('M104 196V150Q104 50 200 48')+Fd('M168 70q-18 60 0 122h64q18-62 0-122q-32-10-64 0z')+'<ellipse class="b" cx="200" cy="112" rx="18" ry="22"/>'+Bd('M182 150q18 12 36 0M184 168q16 10 32 0')+Fd('M94 200h212v36H94z')+Bd('M102 208h196')+F('M106 236h20v136h-20z')+B('M112 244v90')+F('M126 236v18q8 0 16-18z')+Fd('M106 346h188v11H106z')+Bd('M112 351h176'),
+SH+Fd('M108 196V100Q108 34 200 34T292 100v96h-16V102Q276 54 200 54T124 102v94z')+'<path d="M124 196V102Q124 54 200 54T276 102v94z" fill="url(#hc)"/>'+Fd('M92 196h216v28H92z')+Bd('M98 204h204')+'<g class="g"><circle cx="110" cy="210" r="3"/><circle cx="290" cy="210" r="3"/></g>'+F('M100 224h26v148h-26z')+B('M108 236v100')+Fd('M100 350h200v14H100z')+Bd('M104 357h192')+'<g class="b">'+M('M100 214h8')+'</g>',
+SH+Sd(9,'M112 206Q96 70 200 38Q304 70 288 206')+Sd(5,'M132 206V86M152 206V66M176 206V54M200 206V50M224 206V54M248 206V66M268 206V86')+Bd('M115 196Q101 76 198 46')+Fd('M92 206q108-14 216 0l-4 30q-104 10-208 0z')+Bd('M100 218q100-10 200 0')+F('M116 236h20l-24 136H92z')+B('M120 246l-14 100')+Fd('M98 336h204v7H98z')+'<g class="b"><path d="M150 339.500h6M244 339.500h6"/></g>',
+SH+Fd('M122 30q78-22 156 0v176H122zM138 52h124v136H138z')+'<rect x="138" y="52" width="124" height="136" fill="url(#hd)"/>'+Bd('M146 60h108v120H146z')+Fd('M166 30q34-20 68 0q-34 12-68 0z')+Bd('M176 32q24-10 48 0')+F('M94 146h32v60H94z')+B('M100 154v44')+F('M88 138h42v10H88z')+Fd('M92 206h216v18H92z')+Fd('M92 224h216v12H92z')+Bd('M100 230h200')+F('M100 236h28q-8 36 0 70t-2 66h-30q10-30 0-66t4-70z')+B('M112 248v40M110 330v30'),
+SH+'<path d="M100 214a100 14 0 1 0 200 0a100 14 0 1 0 -200 0" fill="url(#hc)"/>'+Sd(12,'M146 206Q124 40 200 34Q276 40 254 206')+Bd('M152 198Q132 52 198 42')+Sd(10,'M180 200Q172 96 200 86Q228 96 220 200')+Sd(10,'M100 214a100 14 0 1 0 200 0a100 14 0 1 0 -200 0')+Sd(12,'M114 222L106 366M286 222L294 366')+Bd('M111 232L105 354')+Sd(8,'M108 352a92 8 0 1 0 184 0a92 8 0 1 0 -184 0'),
+SH+F('M150 6h12v206h-12z')+Fd('M146 4h108v38H146z')+'<ellipse class="b" cx="200" cy="23" rx="32" ry="9"/>'+Fd('M150 62h100v9H150zM150 90h100v9H150zM150 118h100v9H150zM150 146h100v9H150zM150 174h100v9H150z')+Fd('M112 206h176v30H112z')+Bd('M118 214h164M118 228h164')+F('M112 236h14v136h-14z')+B('M117 244v110')+Fd('M112 346h176v8H112z'),
+SH+Fd('M140 40h120v152H140z')+Bd('M148 48h104v136H148z')+Fd('M120 200h160v14H120z')+F('M90 140h46v10H90z')+F('M100 150h14v222h-14z')+B('M92 145h8M100 372h14M100 160v200')+Fd('M100 224h200v10H100z')+Fd('M100 346h200v12H100z')+Bd('M104 352h192'),
+SH+Fd('M146 40h108v164H146zM156 52h88v140h-88z')+'<rect x="156" y="52" width="88" height="140" fill="url(#hc)"/>'+Fd('M132 206h136v26H132z')+'<rect x="138" y="210" width="124" height="14" fill="url(#hc)"/>'+S(11,'M126 232V366H88')+B('M122 240V360H98')+S(8,'M146 204V232'),
+SH+Fd('M130 40Q200 22 270 40V196Q200 222 130 196z')+Bd('M154 72h92M154 92h92M154 112h92')+Bd('M150 160Q200 172 250 160')+S(14,'M106 130Q96 200 112 252Q124 330 92 372')+B('M102 140Q93 200 108 250'),
+SH+Fd('M134 80q66-14 132 0l-4 76q-62-10-124 0z')+Bd('M142 92q58-10 116 0')+Fd('M196 156h8v38h-8z')+Fd('M120 192q80 10 160 0v22q-80 8-160 0z')+'<g class="g"><circle cx="128" cy="214" r="6"/><circle cx="272" cy="214" r="6"/></g>'+F('M118 220h16l-20 152H92z')+B('M124 230l-18 130'),
+SH+Sd(11,'M120 132Q200 54 280 132')+Sd(9,'M126 206V136M274 206V136')+Fd('M170 74h60l-20 52v80h-20v-80z')+Bd('M200 84v100')+'<path d="M110 206h180v18H110z" class="s" stroke-width="3" fill="url(#hc)"/>'+F('M110 224h16l-8 148h-6z')+Sd(6,'M104 346h192')+Bd('M116 232l-4 100'),
+SH+Fd('M96 56q104-34 208 0l-6 140q-94 40-196 0z')+Bd('M112 70q88-22 176 0M118 100q82-16 164 0')+F('M110 200q-18 86 4 172h26q-16-86-6-166z')+B('M121 216q-8 70 4 140'),
+SH+'<path class="gl" d="M132 190V60Q132 36 200 36T268 60V190z"/>'+Sd(4,'M132 190V60Q132 36 200 36T268 60V190')+Sd(2.500,'M148 178V70Q148 50 200 50T252 70V178z')+'<path class="gl" d="M110 200h180l8 36H102z"/>'+Sd(4,'M110 200h180l8 36H102z')+S(8,'M114 238q-14 40 8 80q12 24-10 54')
+];
+
+const D=[
+{e:'이집트 · 신왕국',y:'BC 1330경',n:'사자 다리 왕좌',en:'The Lion-Legged Throne',l:'앉는다는 것은 곧 다스린다는 뜻이었다.',b:'투탕카멘의 황금 왕좌처럼 의자는 왕과 신만의 것이었다. 사자 발 다리는 왕권을 지키는 힘을 상징했다.',m:['금박 목재','권력'],featured:true},
+{e:'그리스 · 고전기',y:'BC 5세기',n:'클리스모스',en:'Klismos',l:'의자가 권위에서 몸의 편안함으로 내려왔다.',b:'바깥으로 휘어진 사브르 다리와 등을 감싸는 곡선 등받이. 도기 그림에 자주 나오며 18세기 신고전주의가 이 형태를 되살렸다.',m:['목재','곡선']},
+{e:'로마 · 공화정',y:'BC 1세기',n:'세라 쿠룰리스',en:'Sella Curulis',l:'접어서 들고 다니는 권력의 자리.',b:'에트루리아에서 이어받은 X자 다리 접이식 의자. 최고위 정무관만 앉을 수 있었고 상아로 장식하기도 했다.',m:['목재·상아','접이식']},
+{e:'중국 · 명',y:'16–17세기',n:'권의',en:'Quanyi, 圈椅',l:'등받이와 팔걸이가 하나의 곡선으로 이어진다.',b:'황화리 같은 단단한 나무를 못 없이 짜 맞춰 만들었다. 말굽처럼 둥글게 감싸는 등받이는 동아시아 의자의 전형이 되었다.',m:['황화리목','짜맞춤']},
+{e:'한국 · 조선',y:'14–19세기',n:'교의',en:'Gyoui, 交椅',l:'온돌 위의 나라에서 의자는 의례를 위한 자리였다.',b:'좌식 생활이 기본이던 조선에서 의자는 흔치 않았다. 말굽형 등받이의 접이식 교의는 왕실 행사와 제례에서 격을 세웠다.',m:['목재·옻칠','의례'],featured:true},
+{e:'영국 · 18세기',y:'1720경',n:'윈저 체어',en:'Windsor Chair',l:'장인의 손에서 서민의 집으로 들어온 의자.',b:'가는 가시 막대 등받이와 통판 좌판에 다리를 직접 끼워 만든다. 부위마다 알맞은 나무를 골라 쓰는 지혜가 담겼다.',m:['느릅·너도밤나무','수공예']},
+{e:'프랑스 · 바로크',y:'17세기',n:'루이 14세 팔걸이의자',en:'Fauteuil à la Louis XIV',l:'어떤 의자에 앉느냐가 궁정에서의 서열이었다.',b:'높은 등받이와 조각된 다리의 팔걸이의자는 베르사유 궁정 의례의 일부였다. 대부분은 등받이 없는 스툴에 앉았다.',m:['조각 목재·직물','서열']},
+{e:'오스트리아 · 산업화',y:'1859',n:'토네트 No.14',en:'Thonet No. 14',l:'의자가 처음으로 모두의 물건이 되었다.',b:'증기로 너도밤나무를 휘어 만든 의자로 여섯 개 부품과 나사로 조립된다. 분해해 상자에 담아 운반할 수 있어 카페의 표준이 되었다.',m:['곡목','대량생산'],featured:true},
+{e:'영국 · 아르누보',y:'1902',n:'힐하우스 래더백',en:'Hill House Ladderback',l:'앉기 위한 의자가 공간을 나누는 선이 되었다.',b:'찰스 레니 매킨토시가 글래스고의 저택을 위해 설계했다. 1.4m가 넘는 높은 등받이와 가로 살이 방 안에 수직선을 세운다.',m:['검게 칠한 물푸레','건축적']},
+{e:'네덜란드 · 데 스틸',y:'1918',n:'레드 블루 체어',en:'Red Blue Chair',l:'의자를 직선과 면으로 환원한 입체 구성.',b:'헤릿 리트벨트가 규격 각재와 판을 엇갈려 쌓아 만들었다. 이후 색을 입혀 데 스틸의 미학을 가구로 구현한 상징이 되었다.',m:['각재·합판','추상']},
+{e:'독일 · 바우하우스',y:'1928',n:'체스카 B32',en:'Cesca Chair',l:'다리 하나 없이도 의자는 설 수 있다.',b:'마르셀 브로이어가 자전거 핸들의 강철 파이프에서 착상한 캔틸레버 의자. 철관이 하중을 받아 앞으로 살짝 탄력 있게 흔들린다.',m:['강관·등나무','캔틸레버']},
+{e:'핀란드 · 모더니즘',y:'1932',n:'파이미오 체어',en:'Paimio Chair',l:'병든 몸을 위해 설계한 의자.',b:'알바 알토가 파이미오 결핵 요양원을 위해 만들었다. 자작나무 합판을 성형해 기울어진 등받이가 환자의 호흡을 돕도록 했다.',m:['자작나무 합판','인간 중심']},
+{e:'미국 · 전후 디자인',y:'1946',n:'이임스 몰디드 플라이우드 체어',en:'Eames LCW',l:'전쟁의 기술이 일상의 의자가 되었다.',b:'찰스와 레이 이임스가 부상병용 합판 부목 기술을 응용해 열과 압력으로 합판을 입체로 성형했다.',m:['성형 합판','양산']},
+{e:'덴마크 · 스칸디나비아',y:'1949',n:'위시본 체어 CH24',en:'Wishbone Chair',l:'동양의 의자를 북유럽의 손으로 다시 읽었다.',b:'한스 웨그너가 명나라 의자 초상화에서 착상한 Y자 등받이 의자다. 종이 끈을 손으로 엮은 좌판이 가볍고 단단하다.',m:['물푸레·종이 끈','수공 양산']},
+{e:'덴마크 · 팝',y:'1960',n:'팬톤 체어',en:'Panton Chair',l:'다리와 등과 좌판이 하나로 이어진 곡선.',b:'베르너 팬톤이 설계한 최초의 일체형 사출 성형 플라스틱 의자. 설계 7년 후인 1967년에야 양산되었다.',m:['플라스틱','일체형']},
+{e:'프랑스 · 동시대',y:'2002',n:'루이 고스트',en:'Louis Ghost',l:'루이 시대의 윤곽이 투명한 유령으로 돌아왔다.',b:'필리프 스탁이 루이 시대풍 메달리온 의자를 투명 폴리카보네이트 일체형으로 재해석했다. 역사와 대량생산이 한 의자에서 만난다.',m:['폴리카보네이트','재해석']}
+];
+
+const N = D.length, R = 5;
+const st = document.getElementById('st');
+const pn = document.getElementById('pn');
+const rail = document.getElementById('rail');
+
+const L = C.map(s => {
+  const d = document.createElement('div');
+  d.className = 'layer';
+  d.innerHTML = `<svg class="cast" viewBox="0 0 400 400" aria-hidden="true" fill="currentColor">${s.replace(SH, '')}</svg><svg viewBox="0 0 400 400" aria-hidden="true" fill="currentColor">${s}</svg>`;
+  st.appendChild(d);
+  return d;
+});
+
+D.forEach((d, i) => {
+  const b = document.createElement('button');
+  b.innerHTML = `<span>${d.y}</span>`;
+  b.setAttribute('aria-label', d.n);
+  b.onclick = () => { z = i; hideHint(); };
+  rail.appendChild(b);
+});
+
+let z = 0, zd = 0, dx = 0, busy = 0, cur = -1, tm, mute = 0, ac;
+const cl = v => Math.max(0, Math.min(N - 1, v));
+const ez = p => p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+
+function hideHint() {
+  const hint = document.getElementById('hint');
+  if (hint) hint.style.opacity = 0;
+}
+
+function info(i) {
+  const d = D[i];
+  pn.classList.add('o');
+  setTimeout(() => {
+    // 2. 카드 모듈 변형 클래스 적용 (Featured Modifier)
+    if (d.featured) {
+      pn.className = 'card-module card-module--featured';
+    } else {
+      pn.className = 'card-module';
+    }
+
+    // 3. 패턴(P1, P3) 및 카드 템플릿 구성
+    pn.innerHTML = `
+      <div class="k">${d.e} ${d.featured ? '<span class="pattern-badge">주요 작품</span>' : ''}</div>
+      <div class="y">${d.y}</div>
+      <h2>${d.n}</h2>
+      <div class="en">${d.en}</div>
+      <p class="l">${d.l}</p>
+      <p class="b">${d.b}</p>
+      <div class="m">${d.m.map(x => `<span>${x}</span>`).join('')}</div>
+    `;
+    pn.classList.remove('o');
+  }, 260);
+
+  [...rail.children].forEach((b, k) => b.classList.toggle('on', k === i));
+}
+
+const PAL = [[255, 230, 0, 26, 31, 181], [229, 0, 125, 255, 230, 0], [26, 31, 181, 255, 62, 165]];
+function col(z) {
+  const i = Math.floor(z), t = z - i, u = t * t * (3 - 2 * t);
+  const a = PAL[i % 3], b = PAL[(i + 1) % 3];
+  const m = k => Math.round(a[k] + (b[k] - a[k]) * u);
+  const r = document.documentElement.style;
+  const ink = `${m(3)},${m(4)},${m(5)}`;
+  r.setProperty('--color-bg', `rgb(${m(0)},${m(1)},${m(2)})`);
+  r.setProperty('--color-ink', `rgb(${ink})`);
+  r.setProperty('--color-mut', `rgba(${ink},.72)`);
+}
+
+function draw() {
+  if (!busy) zd += (z - zd) * .14;
+  L.forEach((el, i) => {
+    const d = zd - i;
+    const s = Math.pow(R, d);
+    let o = 1;
+    if (d < -2.4) o = 0;
+    else if (d < -1.9) o = (d + 2.4) / .5;
+    else if (d > 1) o = d > 1.7 ? 0 : 1 - (d - 1) / .7;
+
+    el.style.opacity = o;
+    el.style.visibility = o ? 'visible' : 'hidden';
+    el.style.transform = `scale(${s})`;
+  });
+
+  st.style.transform = `translateX(${dx}px)`;
+  col(zd);
+
+  const i = Math.round(zd);
+  if (i !== cur) {
+    cur = i;
+    info(i);
+  }
+  requestAnimationFrame(draw);
+}
+
+function snd() {
+  if (mute) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume();
+
+    const t = ac.currentTime;
+    const dur = 0.65;
+    const sampleRate = ac.sampleRate;
+    const bufferSize = sampleRate * dur;
+    const buffer = ac.createBuffer(1, bufferSize, sampleRate);
+    const data = buffer.getChannelData(0);
+
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+      data[i] *= 0.11;
+      b6 = white * 0.115926;
+    }
+
+    const noise = ac.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ac.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(320, t);
+    filter.frequency.linearRampToValueAtTime(780, t + 0.2);
+    filter.frequency.linearRampToValueAtTime(380, t + dur);
+    filter.Q.setValueAtTime(4.2, t);
+
+    const lfo = ac.createOscillator();
+    lfo.type = 'sawtooth';
+    lfo.frequency.setValueAtTime(26, t);
+    lfo.frequency.linearRampToValueAtTime(14, t + dur);
+
+    const lfoGain = ac.createGain();
+    lfoGain.gain.setValueAtTime(0.45, t);
+
+    const mainGain = ac.createGain();
+    mainGain.gain.setValueAtTime(0.01, t);
+    mainGain.gain.linearRampToValueAtTime(0.7, t + 0.08);
+    mainGain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+    noise.connect(filter);
+    filter.connect(mainGain);
+    lfo.connect(lfoGain);
+    lfoGain.connect(mainGain.gain);
+    mainGain.connect(ac.destination);
+
+    noise.start(t);
+    lfo.start(t);
+    noise.stop(t + dur);
+    lfo.stop(t + dur);
+
+    const thud = ac.createOscillator();
+    const thudGain = ac.createGain();
+    thud.type = 'triangle';
+    thud.frequency.setValueAtTime(110, t + dur - 0.08);
+    thud.frequency.exponentialRampToValueAtTime(35, t + dur + 0.12);
+
+    thudGain.gain.setValueAtTime(0, t + dur - 0.08);
+    thudGain.gain.linearRampToValueAtTime(0.45, t + dur - 0.02);
+    thudGain.gain.exponentialRampToValueAtTime(0.001, t + dur + 0.15);
+
+    thud.connect(thudGain);
+    thudGain.connect(ac.destination);
+    thud.start(t + dur - 0.08);
+    thud.stop(t + dur + 0.15);
+  } catch (e) {}
+}
+
+function slide(dir) {
+  hideHint();
+  const i = Math.round(z) + dir;
+  if (busy || i < 0 || i >= N) return;
+  busy = 1;
+  snd();
+  const W = innerWidth, t0 = performance.now();
+  let sw = 0;
+  (function f(now) {
+    const p = Math.min(1, (now - t0) / 900);
+    if (p < .5) dx = -dir * ez(p * 2) * W;
+    else {
+      if (!sw) { z = zd = i; sw = 1; }
+      dx = dir * (1 - ez((p - .5) * 2)) * W;
+    }
+    if (p < 1) requestAnimationFrame(f);
+    else { dx = 0; busy = 0; }
+  })(t0);
+}
+
+function snap() {
+  clearTimeout(tm);
+  tm = setTimeout(() => { z = Math.round(z); }, 240);
+}
+
+addEventListener('wheel', e => {
+  e.preventDefault();
+  hideHint();
+  if (busy) return;
+  if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+    if (Math.abs(e.deltaX) > 30) slide(e.deltaX > 0 ? 1 : -1);
+    return;
+  }
+  z = cl(z + e.deltaY * .0014);
+  snap();
+}, { passive: false });
+
+let p0 = null, z0 = 0, ax = '';
+st.addEventListener('pointerdown', e => {
+  p0 = [e.clientX, e.clientY];
+  z0 = z;
+  ax = '';
+  st.setPointerCapture(e.pointerId);
+});
+st.addEventListener('pointermove', e => {
+  if (!p0 || busy) return;
+  const x = e.clientX - p0[0], y = e.clientY - p0[1];
+  if (!ax && Math.hypot(x, y) > 10) ax = Math.abs(x) > Math.abs(y) ? 'h' : 'v';
+  if (ax === 'v') {
+    hideHint();
+    z = cl(z0 - y / (innerHeight * .45));
+  }
+});
+st.addEventListener('pointerup', e => {
+  if (!p0) return;
+  const x = e.clientX - p0[0];
+  if (ax === 'h' && Math.abs(x) > 50) slide(x < 0 ? 1 : -1);
+  else if (ax === 'v') snap();
+  p0 = null;
+});
+
+addEventListener('keydown', e => {
+  const k = e.key;
+  if (k === 'ArrowRight') slide(1);
+  else if (k === 'ArrowLeft') slide(-1);
+  else if (k === 'ArrowDown' || k === '+') { hideHint(); z = cl(Math.round(z) + 1); }
+  else if (k === 'ArrowUp' || k === '-') { hideHint(); z = cl(Math.round(z) - 1); }
+});
+
+document.getElementById('snd').onclick = function() {
+  mute = !mute;
+  this.textContent = mute ? '소리 꺼짐' : '소리 켜짐';
+};
+
+const gridOverlay = document.getElementById('grid-overlay');
+const gridBtn = document.getElementById('grid-btn');
+gridBtn.onclick = function() {
+  gridOverlay.classList.toggle('active');
+};
+
+/* --------------------------------------------------
+   시간대별 역광 (Time-of-day Backlight)
+   기기 시각 → 태양(밤엔 달) 위치 → 역광 세기·빛 색·방향
+   테스트: 주소 끝에 #h=17.5 처럼 붙이면 그 시각으로 고정
+-------------------------------------------------- */
+(() => {
+  document.body.insertAdjacentHTML('afterbegin', '<div id="bloom"></div>');
+  document.body.insertAdjacentHTML('beforeend', '<div id="shaft"></div>');
+  const bloom = document.getElementById('bloom');
+  const shaft = document.getElementById('shaft');
+  const root = document.documentElement.style;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const sm = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+  // 시각별 빛 색: 새벽 분홍금빛 → 낮 흰빛 → 해질녘 주황 → 노을 보라 → 밤 달빛
+  const LIGHT = [
+    [0, 120, 150, 255], [5, 140, 170, 255], [6, 255, 190, 140], [7.5, 255, 222, 170],
+    [10, 255, 246, 228], [13, 255, 255, 255], [16, 255, 226, 160], [17.5, 255, 170, 90],
+    [18.5, 255, 120, 90], [19.5, 200, 110, 200], [21, 120, 150, 255], [24, 120, 150, 255]
+  ];
+  function light(h) {
+    for (let i = 0; i < LIGHT.length - 1; i++) {
+      const a = LIGHT[i], b = LIGHT[i + 1];
+      if (h >= a[0] && h <= b[0]) {
+        const t = (h - a[0]) / (b[0] - a[0]);
+        return [1, 2, 3].map(k => Math.round(lerp(a[k], b[k], t))).join(',');
+      }
+    }
+    return '255,255,255';
+  }
+
+  function hourNow() {
+    const m = location.hash.match(/[#&]h=(\d+(?:\.\d+)?)/);
+    if (m) return Math.min(24, +m[1]);
+    const d = new Date();
+    return d.getHours() + d.getMinutes() / 60;
+  }
+
+  let castOp = 0.4;
+
+  function applyLight() {
+    const h = hourNow();
+    const t = (h - 6) / 12;
+    const k = Math.max(0, Math.sin(Math.PI * t));        // 태양 고도 (정오 1)
+    const w = sm(0, 0.3, k);                             // 낮 비중
+    const wb = sm(0, 0.06, k);                           // 해가 떠 있는지
+    const X = lerp(0.6, -Math.cos(Math.PI * t), w);      // 그림자 방향
+    const sun = -X;                                      // 빛이 오는 쪽 (+ 오른쪽)
+    const len = lerp(2.4, Math.min(4.5, 1 / Math.max(k, 0.22)), w);
+    const back = lerp(0.3, Math.pow(1 - k, 1.6), wb);    // 역광 세기: 정오 0, 일출·일몰 1
+    const sil = sm(0.62, 0.95, back) * wb;               // 실루엣 모드
+    const beam = sm(0.45, 0.9, back) * sm(0, 0.08, k);   // 빛줄기 (새벽·해질녘)
+    const L = light(h);
+    const rgba = a => `rgba(${L},${a.toFixed(3)})`;
+
+    root.setProperty('--sil', sil.toFixed(3));
+    root.setProperty('--rim-solid', L);
+
+    // 1. 림 라이트 + 윤곽 번짐 (의자)
+    root.setProperty('--rim-x', `${(sun * (1.2 + 2.6 * back)).toFixed(2)}px`);
+    root.setProperty('--rim-y', `${(-0.4 - 1.4 * back).toFixed(2)}px`);
+    root.setProperty('--rim-c', rgba(0.08 + 0.84 * back));
+    root.setProperty('--rim-glow', `${(3 + 14 * back).toFixed(1)}px`);
+    root.setProperty('--rim-glow-c', rgba(0.12 + 0.5 * back));
+    root.setProperty('--melt', `${(0.9 * sm(0.5, 0.95, back) * wb).toFixed(2)}px`);
+
+    // 2. 글자 후광
+    const a = back * 0.9;
+    root.setProperty('--halo', `0 0 2px ${rgba(a)}, 0 0 10px ${rgba(a * 0.75)}, 0 0 26px ${rgba(a * 0.55)}`);
+
+    // 3. 카드 림 라이트 (그림자 대신 가장자리 빛)
+    const card = e => {
+      const rx = (-sun * (1.5 + 2 * back)).toFixed(2);
+      const ry = (1 + 1.5 * back).toFixed(2);
+      return `inset ${rx}px ${ry}px 0 0 ${rgba(0.1 + 0.75 * back)}, ` +
+             `inset 0 0 ${(10 + 12 * sil).toFixed(0)}px ${rgba(0.05 + 0.3 * sil)}, ` +
+             `0 0 ${(e * (1 + 3 * back)).toFixed(0)}px ${rgba(0.06 + 0.5 * back * (0.6 + 0.4 * sil))}`;
+    };
+    root.setProperty('--shadow-card', card(5));
+    root.setProperty('--shadow-card-featured', card(8));
+
+    // 4. 빛 번짐 (블룸): 해 위치에서 퍼지는 radial-gradient, 낮을수록 커짐
+    const sx = 50 + sun * 40, sy = 78 - k * 58;
+    const r = 34 + 42 * (1 - k) * wb + 10 * (1 - wb);
+    const ba = lerp(0.12, 0.12 + 0.36 * back, wb);
+    bloom.style.background = `radial-gradient(circle at ${sx.toFixed(1)}% ${sy.toFixed(1)}%, ` +
+      `${rgba(ba)} 0%, ${rgba(ba * 0.55)} ${(r * 0.35).toFixed(0)}vmax, ${rgba(0)} ${r.toFixed(0)}vmax)`;
+
+    // 5. 빛줄기: 사선 한 줄기 (새벽·해질녘)
+    const ang = 90 + 40 * sun, pos = 50 + sun * 14;
+    shaft.style.background = `linear-gradient(${ang.toFixed(0)}deg, ${rgba(0)} ${pos - 24}%, ` +
+      `${rgba(0.45 * beam)} ${pos - 5}%, ${rgba(0.75 * beam)} ${pos}%, ${rgba(0.3 * beam)} ${pos + 6}%, ` +
+      `${rgba(0)} ${pos + 14}%, ${rgba(0.18 * beam)} ${pos + 24}%, ${rgba(0)} ${pos + 30}%)`;
+    const mk = 'linear-gradient(to bottom, #000 0%, rgba(0,0,0,.25) 70%, transparent 100%)';
+    shaft.style.webkitMaskImage = mk; shaft.style.maskImage = mk;
+
+    // 의자 모양 투영 그림자 (시각에 따라 길이·방향)
+    const lean = Math.max(-55, Math.min(55, Math.atan(X * (len - 0.5) * 0.3) * 180 / Math.PI));
+    const blur = lerp(8, 1 + (1 - k) * 6, w);
+    root.setProperty('--cast-skew', `${lean.toFixed(1)}deg`);
+    root.setProperty('--cast-sy', (-(0.16 + (len - 1) * 0.15)).toFixed(3));
+    root.setProperty('--cast-blur', `${(blur * 0.7).toFixed(1)}px`);
+    castOp = lerp(0.14, 0.34 + 0.16 * Math.sqrt(k), w);
+  }
+
+  // 현재 의자 레이어에서만 투영 그림자가 보이도록
+  (function loop() {
+    L.forEach((el, i) => {
+      const o = Math.max(0, 1 - Math.abs(zd - i) * 1.8);
+      el.firstElementChild.style.opacity = (o * castOp).toFixed(3);
+    });
+    requestAnimationFrame(loop);
+  })();
+
+  applyLight();
+  setInterval(applyLight, 60000);
+  addEventListener('hashchange', applyLight);
+})();
+
+draw();
+</script>
+</body>
+</html>
